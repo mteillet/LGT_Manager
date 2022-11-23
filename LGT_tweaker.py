@@ -134,17 +134,37 @@ class SelectLpePanel(QtWidgets.QWidget):
 			#currentShuffle["postage_stamp"].setValue( True )
 			shuffleNodeList.append(currentShuffle)
 			exposureNodeList.append(currentExposure)
+		# Adding black shuffle for switching activations
+		blackShuffle = nuke.nodes.Shuffle( label = "blackShuffle", inputs = [readDot])
+		blackShuffle["in"].setValue(selectedChannels[0])
+		#print(dir(blackShuffle))
+		settings = ["red", "green", "blue"]
+		for chan in settings:
+			blackShuffle[chan].setValue(0)
+		shuffleNodeList.append(blackShuffle)
+		
 
-		current = 1
+		# Creating and merging the channels
 		mergeList = []
+		blackMerge = nuke.nodes.Merge2(operation = "plus", inputs = [blackShuffle, exposureNodeList[0]])
+		blackMerge["label"].setValue("MRG_{}".format(exposureNodeList[0]["label"].getValue()))
+		blackMerge["name"].setValue("MRG_{}".format(exposureNodeList[0]["label"].getValue()))
+
+		mergeList.append(blackMerge)
+		
+		current = 1
 		for i in exposureNodeList:
 			if current == 1 :
-				currentMerge = nuke.nodes.Merge2(operation = "plus", inputs = [exposureNodeList[current], exposureNodeList[current-1]])
+				currentMerge = nuke.nodes.Merge2(operation = "plus", inputs = [mergeList[0], exposureNodeList[current]])
+				currentMerge["label"].setValue("MRG_{}".format(exposureNodeList[current]["label"].getValue()))
+				currentMerge["name"].setValue("MRG_{}".format(exposureNodeList[current]["label"].getValue()))
 				mergeList.append(currentMerge)
 			else:
 				if current < (len(exposureNodeList)):
 					#print(current)
-					currentMerge = nuke.nodes.Merge2(operation = "plus", inputs = [mergeList[current-2], exposureNodeList[current]])
+					currentMerge = nuke.nodes.Merge2(operation = "plus", inputs = [mergeList[current-1], exposureNodeList[current]])
+					currentMerge["label"].setValue("MRG_{}".format(exposureNodeList[current]["label"].getValue()))
+					currentMerge["name"].setValue("MRG_{}".format(exposureNodeList[current]["label"].getValue()))
 					mergeList.append(currentMerge)
 			current += 1
 
@@ -175,7 +195,7 @@ class SelectLpePanel(QtWidgets.QWidget):
 				# Light Name Knob
 				text = nuke.Text_Knob( str("text_{}".format(node["label"].getValue())) , str(node["label"].getValue()[4:]) )
 				# Solo Button
-				show = nuke.Boolean_Knob("Show", "Show")
+				show = nuke.Boolean_Knob("Show_{}".format(node["label"].getValue()[4:]), "Show")
 				show.setValue(1)	
 				# Exposure Knob
 				es = nuke.WH_Knob(node["label"].getValue(), "Exposure")
@@ -188,14 +208,18 @@ class SelectLpePanel(QtWidgets.QWidget):
 				LgtGroup.addKnob(text)
 				LgtGroup.addKnob(show)
 				LgtGroup.addKnob(es)
-				LgtGroup.addKnob(col)
+				#LgtGroup.addKnob(col)
 				LgtGroup.addKnob(div)
-				# Linking knob to the corresponding Exposure on
+				# LINKING PARAMETERS
+				# LINKING VISIBILITY
+				knobSrc = "{}.{}".format(LgtGroup["name"].getValue(), "Show_{}".format(node["label"].getValue()[4:]))
+				knobDest =  ("{}.{}".format(LgtGroup["name"].getValue() , "MRG_{}".format(node["label"].getValue())))
+				nuke.toNode(knobDest).knob("mix").setExpression(knobSrc)
+				# Linking EXPOSURE
 				knobSrc= "{}.{}".format(LgtGroup["name"].getValue(), node["label"].getValue())
 				knobDest = ("{}.{}".format(LgtGroup["name"].getValue() , node["name"].getValue()))
 				#print(knobSrc)
 				#print(knobDest)
-				settings = ["red", "green", "blue"]
 				for chan in settings :
 					nuke.toNode(knobDest).knob(chan).setExpression(knobSrc)
 
