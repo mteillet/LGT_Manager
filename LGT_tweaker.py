@@ -194,21 +194,26 @@ class SelectLpePanel(QtWidgets.QWidget):
 				correctExposureNodes.append(node)
 				# Light Name Knob
 				text = nuke.Text_Knob( str("text_{}".format(node["label"].getValue())) , str(node["label"].getValue()[4:]) )
-				# Solo Button
+				# Show Button
 				show = nuke.Boolean_Knob("Show_{}".format(node["label"].getValue()[4:]), "Show")
 				show.setValue(1)	
+				# Solo Button
+				solo = nuke.Boolean_Knob("Solo_{}".format(node["label"].getValue()[4:]), "Solo")
 				# Exposure Knob
 				es = nuke.WH_Knob(node["label"].getValue(), "Exposure")
 				es.setRange(-20,20)
 				# Color
-				col = nuke.Color_Knob("color", "color")
+				col = nuke.Color_Knob("{}_color".format(node["label"].getValue()[4:]), "Color")
+				col.setValue([1, 1, 1])
+				#print(col.getValue()[0])
 				# Divider
 				div = nuke.Text_Knob("div", " ")
 				# Adding knob to group
 				LgtGroup.addKnob(text)
 				LgtGroup.addKnob(show)
+				#LgtGroup.addKnob(solo)
 				LgtGroup.addKnob(es)
-				#LgtGroup.addKnob(col)
+				LgtGroup.addKnob(col)
 				LgtGroup.addKnob(div)
 				# LINKING PARAMETERS
 				# LINKING VISIBILITY
@@ -218,10 +223,14 @@ class SelectLpePanel(QtWidgets.QWidget):
 				# Linking EXPOSURE
 				knobSrc= "{}.{}".format(LgtGroup["name"].getValue(), node["label"].getValue())
 				knobDest = ("{}.{}".format(LgtGroup["name"].getValue() , node["name"].getValue()))
+				knobRGB = ("{}.{}".format(LgtGroup["name"].getValue(), "{}_color".format(node["label"].getValue()[4:])))
 				#print(knobSrc)
 				#print(knobDest)
+				colorRGB = ["r","g","b"]
+				current = 0
 				for chan in settings :
-					nuke.toNode(knobDest).knob(chan).setExpression(knobSrc)
+					nuke.toNode(knobDest).knob(chan).setExpression("(1 * {1}.{2}) + ({0}-1)".format(knobSrc, knobRGB, colorRGB[current]))
+					current += 1
 
 
 
