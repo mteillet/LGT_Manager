@@ -1,4 +1,4 @@
-# LGT_Manager
+# LGT_Manager - Arnold/Vray for maya
 Simple Nuke Light AOVs Manager
 
 By default it is configured for Arnold light splits, so it will select any RGBA_* AOV
